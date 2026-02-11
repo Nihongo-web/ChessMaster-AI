@@ -11,7 +11,7 @@
 ---
 
 ### 🌐 **Bilingual Documentation**
-[English](#-english-version) | [Bahasa Indonesia](#-bahasa-indonesia-versi-formal)
+[English](#-english-version) | [Bahasa Indonesia](#-bahasa-indonesia)
 
 ---
 
