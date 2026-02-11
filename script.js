@@ -1,6 +1,7 @@
 /**
  * CHESSMASTER AI - MODULAR JAVASCRIPT
- * Fix: Improved move validation and touch interactions
+ * Role: Dynamic Principal Architect
+ * Feature: Flip Board with Coordinate Sync
  */
 
 class ChessApp {
@@ -44,7 +45,6 @@ class ChessApp {
     async initEngine() {
         try {
             document.getElementById('engineStatus').textContent = 'Loading...';
-            // Use Stockfish 10 ASM.JS for best browser compatibility
             const sfUrl = 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
             const response = await fetch(sfUrl);
             const script = await response.text();
@@ -75,13 +75,26 @@ class ChessApp {
         document.getElementById('undoBtn').onclick = () => this.undoMove();
         document.getElementById('copyPgnBtn').onclick = () => this.copyPGN();
         
+        // Integration of Flip Button
+        const flipBtn = document.getElementById('flipBtn');
+        if (flipBtn) {
+            flipBtn.onclick = () => this.flipBoard();
+        }
+        
         document.getElementById('multipvInput').oninput = (e) => {
             document.getElementById('multipvVal').textContent = e.target.value;
         };
 
         ['eloInput', 'depthInput', 'multipvInput'].forEach(id => {
-            document.getElementById(id).onchange = () => this.triggerAnalysis();
+            const el = document.getElementById(id);
+            if (el) el.onchange = () => this.triggerAnalysis();
         });
+    }
+
+    // --- FITUR FLIP BOARD ---
+    flipBoard() {
+        this.board.flip();
+        this.drawArrows(); // Re-draw arrows based on new orientation
     }
 
     handleResize() {
@@ -136,13 +149,10 @@ class ChessApp {
     }
 
     onDrop(source, target) {
-        // Validate move using queen promotion as default
         const move = this.game.move({ from: source, to: target, promotion: 'q' });
         
         if (move === null) return 'snapback';
 
-        // If it was a promotion move, we actually don't want to finalize it yet
-        // with 'q'. We undo and let the user pick.
         if (move.flags.includes('p')) {
             this.game.undo();
             this.pendingMove = { from: source, to: target };
@@ -150,7 +160,6 @@ class ChessApp {
             return 'snapback';
         }
 
-        // Move is solid. Undo/re-check not needed as move object confirms success.
         this.clearCanvas();
     }
 
@@ -305,14 +314,27 @@ class ChessApp {
         if (!moveStr || moveStr.length < 4) return;
         const from = moveStr.substring(0, 2);
         const to = moveStr.substring(2, 4);
+
+        // Updated getCoords with Flip Logic
         const getCoords = (sq) => {
-            const c = sq.charCodeAt(0) - 97, r = 8 - parseInt(sq[1]), s = this.canvas.width / 8;
+            const isFlipped = this.board.orientation() === 'black';
+            let c = sq.charCodeAt(0) - 97; // a=0, b=1...
+            let r = 8 - parseInt(sq[1]);   // row 8=0, row 1=7
+
+            if (isFlipped) {
+                c = 7 - c; // Flip kolom
+                r = 7 - r; // Flip baris
+            }
+
+            const s = this.canvas.width / 8;
             return { x: c * s + s / 2, y: r * s + s / 2 };
         };
+
         const s = getCoords(from), e = getCoords(to);
         this.ctx.strokeStyle = this.ctx.fillStyle = color;
         this.ctx.lineWidth = 10; this.ctx.lineCap = 'round';
         this.ctx.beginPath(); this.ctx.moveTo(s.x, s.y); this.ctx.lineTo(e.x, e.y); this.ctx.stroke();
+        
         const a = Math.atan2(e.y - s.y, e.x - s.x), h = 20;
         this.ctx.beginPath(); this.ctx.moveTo(e.x, e.y);
         this.ctx.lineTo(e.x - h * Math.cos(a - Math.PI / 6), e.y - h * Math.sin(a - Math.PI / 6));
